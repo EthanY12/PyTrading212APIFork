@@ -2,6 +2,7 @@
 
 import json
 import logging
+
 import re
 import time
 from datetime import datetime
@@ -33,14 +34,16 @@ class Trading212:
         self.session = f"TRADING212_SESSION_{mode.name}"
         self.base_url = f"https://{mode.name.lower()}.trading212.com"
 
-        console.log(f"Starting PyTrading212 in [green]{mode.name}[/green] Mode")
+        console.log(
+            f"Starting PyTrading212 in [green]{mode.name}[/green] Mode")
 
         self.driver = driver
         self.driver.get(constants.URL_LOGIN)
 
         # Click Accept all cookies if it appears
         try:
-            self.driver.find_element(By.CLASS_NAME, constants.CLASS_COOKIES_NOTICE_BUTTON).click()
+            self.driver.find_element(
+                By.CLASS_NAME, constants.CLASS_COOKIES_NOTICE_BUTTON).click()
         except NoSuchElementException:
             pass  # ignore
 
@@ -51,13 +54,15 @@ class Trading212:
         self.driver.find_element(By.NAME, "password").send_keys(password)
 
         # Click login button
-        self.driver.find_element(By.CLASS_NAME, constants.CLASS_LOGIN_BUTTON).click()
+        self.driver.find_element(
+            By.CLASS_NAME, constants.CLASS_LOGIN_BUTTON).click()
 
         # Wait until the site is fully loaded, 120 seconds is a lot, but the site sometimes is very slow
         WebDriverWait(self.driver, 120).until(expected_conditions.
                                               visibility_of_element_located((By.CLASS_NAME, "company-logo")))
 
-        self.user_agent = self.driver.execute_script("return navigator.userAgent;")
+        self.user_agent = self.driver.execute_script(
+            "return navigator.userAgent;")
 
         # Redirect to correct mode, DEMO or LIVE
         if mode.name not in self.driver.current_url:
@@ -99,11 +104,13 @@ class Trading212:
         self.driver.close()
 
     def switch_to(self, trading: constants.Trading):
-        WebDriverWait(self.driver, 60).until(expected_conditions.visibility_of_element_located((By.CLASS_NAME, "account-menu-info")))
+        WebDriverWait(self.driver, 60).until(
+            expected_conditions.visibility_of_element_located((By.CLASS_NAME, "account-menu-info")))
         self.driver.find_element(By.CLASS_NAME, "account-menu-info").click()
         WebDriverWait(self.driver, 10).until(expected_conditions.
                                              visibility_of_element_located((By.CLASS_NAME, "account-types")))
-        element_account_types = self.driver.find_element(By.CLASS_NAME, "account-types")
+        element_account_types = self.driver.find_element(
+            By.CLASS_NAME, "account-types")
         if trading == constants.Trading.CFD:
             element_account_types.find_element(By.CLASS_NAME, "cfd").click()
             WebDriverWait(self.driver, 60).until(expected_conditions.
@@ -152,7 +159,8 @@ class Trading212:
 
     def get_order_details(self, details_path):
         """Get Order Details"""
-        response = requests.get(f"{self.base_url}/rest/history{details_path}", headers=self.headers)
+        response = requests.get(
+            f"{self.base_url}/rest/history{details_path}", headers=self.headers)
         return json.loads(response.content.decode("utf-8"))
 
     def get_dividends(self, older_than: datetime, newer_than: datetime):
@@ -192,7 +200,8 @@ class Trading212:
             (By.CLASS_NAME, right_sidepanel_portfolio_class)
         )
         WebDriverWait(self.driver, 30).until(condition)
-        self.driver.find_element(By.CLASS_NAME, right_sidepanel_portfolio_class).click()
+        self.driver.find_element(
+            By.CLASS_NAME, right_sidepanel_portfolio_class).click()
 
         positions = []
         try:
@@ -250,6 +259,13 @@ class Equity(Trading212):
             url=url,
             headers=self.headers,
             data=order.to_json(),
+        )
+        return json.loads(response.content.decode("utf-8"))
+
+    def get_funds(self):
+        """Get your funds, free, available."""
+        response = requests.get(
+            f"{self.base_url}/rest/v2/customer/accounts/funds", headers=self.headers
         )
         return json.loads(response.content.decode("utf-8"))
 
